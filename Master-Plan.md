@@ -1,4 +1,4 @@
-# MASTER ARCHITECTURE PROMPT (SCALABLE MEDICAL ASSISTANT SAAS)
+# MASTER ARCHITECTURE PROMPT (SCALABLE MEDICAL ASSISTANT SAAS) 
 
 You are an expert software architect and backend engineer.
 Design and help implement a highly scalable, multi-tenant medical assistant SaaS that uses open-source LLMs for clinical decision support (NOT prescribing). You will ensure architecture is scalable, maintainable, migratable, organized, and secure
