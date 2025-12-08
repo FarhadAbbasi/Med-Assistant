@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medical Assistant Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 1.5rem; background: #f5f5f7; }
+    h1 { margin-top: 0; }
+    .card { background: #fff; border-radius: 8px; padding: 1.5rem; max-width: 900px; margin: 0 auto 1.5rem auto; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    label { display: block; font-weight: 600; margin-top: 0.75rem; }
+    input, textarea, select { width: 100%; padding: 0.5rem 0.6rem; margin-top: 0.25rem; border-radius: 4px; border: 1px solid #d0d0d5; font-size: 0.95rem; }
+    textarea { min-height: 80px; resize: vertical; }
+    button { margin-top: 1rem; padding: 0.6rem 1.2rem; border-radius: 4px; border: none; background: #2563eb; color: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .row { display: flex; gap: 1rem; }
+    .row > div { flex: 1; }
+    pre { background: #111827; color: #e5e7eb; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; }
+    .status { margin-top: 0.75rem; font-size: 0.9rem; }
+    .status.error { color: #b91c1c; }
+    .status.ok { color: #065f46; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Medical Assistant Demo</h1>
+    <p>Use this page to ingest guidelines and analyze a mock patient case using the running API.</p>
+  </div>
+
+  <div class="card">
+    <h2>1. Ingest guideline / document</h2>
+    <form id="ingest-form">
+      <label for="doc-title">Title</label>
+      <input type="text" id="doc-title" name="doc-title" placeholder="e.g. Community-acquired pneumonia guideline" required />
+
+      <label for="doc-source">Source (optional)</label>
+      <input type="text" id="doc-source" name="doc-source" placeholder="e.g. NICE, WHO" />
+
+      <label for="doc-content">Content</label>
+      <textarea id="doc-content" name="doc-content" placeholder="Paste guideline text here" required></textarea>
+
+      <button type="submit" id="ingest-btn">Ingest document</button>
+      <div id="ingest-status" class="status"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>2. Analyze patient case</h2>
+    <p>This calls <code>/api/v1/cases/analyze</code>, which will query any ingested guidelines via RAG.</p>
+    <form id="case-form">
+      <div class="row">
+        <div>
+          <label for="age">Patient age</label>
+          <input type="number" id="age" name="age" min="0" max="120" required />
+        </div>
+        <div>
+          <label for="sex">Sex</label>
+          <select id="sex" name="sex" required>
+            <option value="">Select...</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="symptoms">Symptoms (comma-separated)</label>
+      <textarea id="symptoms" name="symptoms" placeholder="fever, cough, shortness of breath" required></textarea>
+
+      <label for="history">History (optional)</label>
+      <textarea id="history" name="history" placeholder="Previous illnesses, risk factors, recent travel, etc."></textarea>
+
+      <label for="medications">Medications (optional, comma-separated)</label>
+      <textarea id="medications" name="medications" placeholder="paracetamol, metformin"></textarea>
+
+      <label for="vitals">Vitals (optional, JSON)</label>
+      <textarea id="vitals" name="vitals" placeholder='{"heart_rate": 98, "bp": "120/80"}'></textarea>
+
+      <button type="submit" id="submit-btn">Analyze case</button>
+      <div id="status" class="status"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Structured Response</h2>
+    <pre id="response-box">Submit a case to see the analysis here.</pre>
+  </div>
+
+  <script>
+    const ingestForm = document.getElementById("ingest-form");
+    const ingestStatusEl = document.getElementById("ingest-status");
+    const ingestBtn = document.getElementById("ingest-btn");
+
+    ingestForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      ingestStatusEl.textContent = "Ingesting...";
+      ingestStatusEl.className = "status";
+      ingestBtn.disabled = true;
+
+      const title = document.getElementById("doc-title").value;
+      const source = document.getElementById("doc-source").value || null;
+      const content = document.getElementById("doc-content").value;
+
+      const payload = { title, source, content };
+
+      try {
+        const res = await fetch("/api/v1/documents/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          ingestStatusEl.textContent = `Error ${res.status}`;
+          ingestStatusEl.className = "status error";
+        } else {
+          ingestStatusEl.textContent = `Ingested (document_id: ${data.document_id})`;
+          ingestStatusEl.className = "status ok";
+        }
+      } catch (err) {
+        ingestStatusEl.textContent = "Network error";
+        ingestStatusEl.className = "status error";
+      } finally {
+        ingestBtn.disabled = false;
+      }
+    });
+
+    const form = document.getElementById("case-form");
+    const statusEl = document.getElementById("status");
+    const responseBox = document.getElementById("response-box");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      statusEl.textContent = "Sending request...";
+      statusEl.className = "status";
+      submitBtn.disabled = true;
+
+      const age = parseInt(document.getElementById("age").value, 10);
+      const sex = document.getElementById("sex").value;
+      const symptomsRaw = document.getElementById("symptoms").value;
+      const history = document.getElementById("history").value || null;
+      const medsRaw = document.getElementById("medications").value;
+      const vitalsRaw = document.getElementById("vitals").value;
+
+      const symptoms = symptomsRaw
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const medications = medsRaw
+        ? medsRaw.split(",").map(s => s.trim()).filter(Boolean)
+        : null;
+
+      let vitals = null;
+      if (vitalsRaw.trim()) {
+        try {
+          vitals = JSON.parse(vitalsRaw);
+        } catch (err) {
+          statusEl.textContent = "Vitals JSON is invalid";
+          statusEl.className = "status error";
+          submitBtn.disabled = false;
+          return;
+        }
+      }
+
+      const payload = {
+        patient_age: age,
+        sex,
+        symptoms,
+        history,
+        medications,
+        vitals,
+      };
+
+      try {
+        const res = await fetch("/api/v1/cases/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          statusEl.textContent = `Error ${res.status}`;
+          statusEl.className = "status error";
+        } else {
+          statusEl.textContent = "OK";
+          statusEl.className = "status ok";
+        }
+        responseBox.textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        statusEl.textContent = "Network error";
+        statusEl.className = "status error";
+        responseBox.textContent = String(err);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

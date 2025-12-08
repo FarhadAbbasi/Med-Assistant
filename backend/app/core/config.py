@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     qdrant_port: int = 6333
     qdrant_collection: str = "guidelines_v1"
 
+    embeddings_dim: int = 1024
+
     rabbitmq_host: str = "rabbitmq"
     rabbitmq_port: int = 5672
     rabbitmq_user: str = "guest"

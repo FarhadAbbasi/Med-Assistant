@@ -1,5 +1,6 @@
 # TODOs
 
+- Enhance demo UI (auth, tenant selection, richer result formatting)
 - Implement real RAG pipeline (embeddings, Qdrant retrieval, ingestion API).
 - Add auth (JWT) and tenant awareness.
 - Add DB models, migrations, and persistence of interactions/audits.

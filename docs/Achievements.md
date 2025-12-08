@@ -4,3 +4,4 @@
 - Mock LLM service with OpenAI-compatible endpoint.
 - Docker Compose with Postgres, Qdrant, RabbitMQ, backend, LLM stub.
 - Basic schemas and safety post-processing (no hard block; disclaimers appended).
+- Minimal web demo UI served at `/demo` that calls `/api/v1/cases/analyze`.
