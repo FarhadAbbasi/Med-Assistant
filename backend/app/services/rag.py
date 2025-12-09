@@ -4,7 +4,7 @@ from app.services.embeddings import embed_texts
 from app.services.qdrant_client import search_similar_texts
 
 
-async def retrieve_context(case: CaseInput) -> list[str]:
+async def retrieve_context(case: CaseInput, tenant_id: str | None = None) -> list[str]:
     s = get_settings()
     query_parts: list[str] = []
     query_parts.append(
@@ -18,10 +18,11 @@ async def retrieve_context(case: CaseInput) -> list[str]:
 
     vectors = await embed_texts([query_text])
     query_vec = vectors[0]
+    effective_tenant = tenant_id or s.default_tenant_id
     texts = search_similar_texts(
         collection=s.qdrant_collection,
         query_vector=query_vec,
-        tenant_id=s.default_tenant_id,
+        tenant_id=effective_tenant,
         limit=5,
     )
     return texts

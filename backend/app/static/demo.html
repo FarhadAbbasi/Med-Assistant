@@ -1,92 +1,387 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>Medical Assistant Demo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 1.5rem; background: #f5f5f7; }
-    h1 { margin-top: 0; }
-    .card { background: #fff; border-radius: 8px; padding: 1.5rem; max-width: 900px; margin: 0 auto 1.5rem auto; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    label { display: block; font-weight: 600; margin-top: 0.75rem; }
-    input, textarea, select { width: 100%; padding: 0.5rem 0.6rem; margin-top: 0.25rem; border-radius: 4px; border: 1px solid #d0d0d5; font-size: 0.95rem; }
-    textarea { min-height: 80px; resize: vertical; }
-    button { margin-top: 1rem; padding: 0.6rem 1.2rem; border-radius: 4px; border: none; background: #2563eb; color: #fff; font-size: 0.95rem; font-weight: 600; cursor: pointer; }
-    button:disabled { opacity: 0.6; cursor: wait; }
-    .row { display: flex; gap: 1rem; }
-    .row > div { flex: 1; }
-    pre { background: #111827; color: #e5e7eb; padding: 1rem; border-radius: 6px; overflow-x: auto; font-size: 0.85rem; }
-    .status { margin-top: 0.75rem; font-size: 0.9rem; }
-    .status.error { color: #b91c1c; }
-    .status.ok { color: #065f46; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #f5f5f7;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto 1.5rem auto;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 90%;
+      padding: 0.5rem 0.6rem;
+      margin-top: 0.25rem;
+      border-radius: 4px;
+      border: 1px solid #d0d0d5;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      border-radius: 4px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    .row {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .row>div {
+      flex: 1;
+    }
+
+    pre {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+
+    .status {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .status.error {
+      color: #b91c1c;
+    }
+
+    .status.ok {
+      color: #065f46;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr) minmax(0, 1.2fr);
+      gap: 1.5rem;
+      max-width: 1800px;
+      margin: 0 auto;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        display: block;
+      }
+    }
+
+    .right-panel-toggle {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 10;
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.8rem;
+      border: 1px solid #4b5563;
+      cursor: pointer;
+    }
+
+    .right-panel {
+      transition: max-width 0.2s ease, opacity 0.2s ease;
+    }
+
+    .right-panel.collapsed {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+    }
+
+    .chat-card {
+      height: 600px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chat-window {
+      flex: 1;
+      overflow-y: auto;
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .chat-empty {
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .msg {
+      max-width: 90%;
+      padding: 0.6rem 0.8rem;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .msg-user {
+      margin-left: auto;
+      background: #dbeafe;
+      border: 1px solid #bfdbfe;
+    }
+
+    .msg-assistant {
+      margin-right: auto;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+    }
+
+    .msg-role {
+      font-weight: 600;
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+      opacity: 0.7;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+    }
   </style>
 </head>
+
 <body>
+  <button type="button" id="right-panel-toggle" class="right-panel-toggle">Toggle LOGIN </button>
+
   <div class="card">
     <h1>Medical Assistant Demo</h1>
-    <p>Use this page to ingest guidelines and analyze a mock patient case using the running API.</p>
+    <p>Log in, ingest guidelines, and chat with the assistant about a structured patient case. The assistant uses RAG +
+      LLM behind the scenes.</p>
   </div>
 
-  <div class="card">
-    <h2>1. Ingest guideline / document</h2>
-    <form id="ingest-form">
-      <label for="doc-title">Title</label>
-      <input type="text" id="doc-title" name="doc-title" placeholder="e.g. Community-acquired pneumonia guideline" required />
-
-      <label for="doc-source">Source (optional)</label>
-      <input type="text" id="doc-source" name="doc-source" placeholder="e.g. NICE, WHO" />
-
-      <label for="doc-content">Content</label>
-      <textarea id="doc-content" name="doc-content" placeholder="Paste guideline text here" required></textarea>
-
-      <button type="submit" id="ingest-btn">Ingest document</button>
-      <div id="ingest-status" class="status"></div>
-    </form>
-  </div>
-
-  <div class="card">
-    <h2>2. Analyze patient case</h2>
-    <p>This calls <code>/api/v1/cases/analyze</code>, which will query any ingested guidelines via RAG.</p>
-    <form id="case-form">
-      <div class="row">
-        <div>
-          <label for="age">Patient age</label>
-          <input type="number" id="age" name="age" min="0" max="120" required />
+  <div class="layout">
+    <div class="card">
+      <h2>1. Patient case</h2>
+      <p style="font-size: 0.85rem; color: #6b7280;">Fill in the structured details; they will be sent to the assistant
+        when you click Analyze.</p>
+      <form id="case-form">
+        <div class="row">
+          <div>
+            <label for="age">Patient age</label>
+            <input type="number" id="age" name="age" min="0" max="120" required />
+          </div>
+          <div>
+            <label for="sex">Sex</label>
+            <select id="sex" name="sex" required>
+              <option value="">Select...</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="sex">Sex</label>
-          <select id="sex" name="sex" required>
-            <option value="">Select...</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
+
+        <label for="symptoms">Symptoms (comma-separated)</label>
+        <textarea id="symptoms" name="symptoms" placeholder="fever, cough, shortness of breath" required></textarea>
+
+        <label for="history">History (optional)</label>
+        <textarea id="history" name="history"
+          placeholder="Previous illnesses, risk factors, recent travel, etc."></textarea>
+
+        <label for="medications">Medications (optional, comma-separated)</label>
+        <textarea id="medications" name="medications" placeholder="paracetamol, metformin"></textarea>
+
+        <label for="vitals">Vitals (optional, JSON)</label>
+        <textarea id="vitals" name="vitals" placeholder='{"heart_rate": 98, "bp": "120/80"}'></textarea>
+
+        <button type="submit" id="submit-btn">Analyze case</button>
+        <div id="status" class="status"></div>
+      </form>
+    </div>
+
+    <div>
+      <div class="card chat-card">
+        <h2>Assistant conversation</h2>
+        <div id="chat-window" class="chat-window">
+          <div class="chat-empty">Submit a case to start the conversation.</div>
         </div>
+        <div class="chat-input-row">
+          <input id="chat-input" type="text" placeholder="Ask a follow-up question..." />
+          <button type="button" id="chat-send">Send</button>
+        </div>
+        <p style="font-size: 0.8rem; color: #6b7280; margin: 0;">Responses are AI-generated for clinical decision
+          support. They are not medical advice.</p>
+      </div>
+    </div>
+
+    <div id="right-panel" class="right-panel">
+
+      <!-- Logic Card -->
+      <div class="card">
+        <h2>0. Login</h2>
+        <form id="login-form">
+          <label for="login-email">Email</label>
+          <input type="email" id="login-email" name="login-email" placeholder="admin@example.com" required />
+
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" name="login-password" placeholder="••••••••" required />
+
+          <button type="submit" id="login-btn">Login</button>
+          <div id="login-status" class="status"></div>
+        </form>
       </div>
 
-      <label for="symptoms">Symptoms (comma-separated)</label>
-      <textarea id="symptoms" name="symptoms" placeholder="fever, cough, shortness of breath" required></textarea>
+      <!-- Ingest Document Card -->
+      <div class="card" style="margin-top: 1rem;">
+        <h2>2. Ingest guideline / document</h2>
+        <form id="ingest-form">
+          <label for="doc-title">Title</label>
+          <input type="text" id="doc-title" name="doc-title" placeholder="e.g. Community-acquired pneumonia guideline"
+            required />
 
-      <label for="history">History (optional)</label>
-      <textarea id="history" name="history" placeholder="Previous illnesses, risk factors, recent travel, etc."></textarea>
+          <label for="doc-source">Source (optional)</label>
+          <input type="text" id="doc-source" name="doc-source" placeholder="e.g. NICE, WHO" />
 
-      <label for="medications">Medications (optional, comma-separated)</label>
-      <textarea id="medications" name="medications" placeholder="paracetamol, metformin"></textarea>
+          <label for="doc-content">Content</label>
+          <textarea id="doc-content" name="doc-content" placeholder="Paste guideline text here" required></textarea>
 
-      <label for="vitals">Vitals (optional, JSON)</label>
-      <textarea id="vitals" name="vitals" placeholder='{"heart_rate": 98, "bp": "120/80"}'></textarea>
-
-      <button type="submit" id="submit-btn">Analyze case</button>
-      <div id="status" class="status"></div>
-    </form>
-  </div>
-
-  <div class="card">
-    <h2>Structured Response</h2>
-    <pre id="response-box">Submit a case to see the analysis here.</pre>
+          <button type="submit" id="ingest-btn">Ingest document</button>
+          <div id="ingest-status" class="status"></div>
+        </form>
+      </div>
+    </div>
   </div>
 
   <script>
+    let accessToken = null;
+
+    const rightPanel = document.getElementById("right-panel");
+    const rightPanelToggle = document.getElementById("right-panel-toggle");
+
+    const loginForm = document.getElementById("login-form");
+    const loginStatusEl = document.getElementById("login-status");
+    const loginBtn = document.getElementById("login-btn");
+
+    const loadChatHistory = async () => {
+      if (!accessToken) return;
+      try {
+        const res = await fetch("/api/v1/chat/history", {
+          headers: { "Authorization": `Bearer ${accessToken}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const msgs = data.messages || [];
+
+        // reset window and history
+        chatWindow.innerHTML = "";
+        chatHistory.length = 0;
+
+        if (!msgs.length) {
+          const empty = document.createElement("div");
+          empty.className = "chat-empty";
+          empty.textContent = "Submit a case to start the conversation.";
+          chatWindow.appendChild(empty);
+          return;
+        }
+
+        for (const m of msgs) {
+          if (!m || !m.role || !m.content) continue;
+          appendMessage(m.role, m.content);
+        }
+      } catch (_) {
+        // ignore history load errors
+      }
+    };
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      loginStatusEl.textContent = "Logging in...";
+      loginStatusEl.className = "status";
+      loginBtn.disabled = true;
+
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      const payload = { email, password };
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          loginStatusEl.textContent = data.detail || `Error ${res.status}`;
+          loginStatusEl.className = "status error";
+          accessToken = null;
+        } else {
+          accessToken = data.access_token;
+          loginStatusEl.textContent = "Logged in";
+          loginStatusEl.className = "status ok";
+          loadChatHistory();
+        }
+      } catch (err) {
+        loginStatusEl.textContent = "Network error";
+        loginStatusEl.className = "status error";
+        accessToken = null;
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    const chatWindow = document.getElementById("chat-window");
+    const chatInput = document.getElementById("chat-input");
+    const chatSend = document.getElementById("chat-send");
+    const chatHistory = [];
+
     const ingestForm = document.getElementById("ingest-form");
     const ingestStatusEl = document.getElementById("ingest-status");
     const ingestBtn = document.getElementById("ingest-btn");
@@ -104,14 +399,21 @@
       const payload = { title, source, content };
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
+        }
         const res = await fetch("/api/v1/documents/ingest", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
         });
         const data = await res.json();
-        if (!res.ok) {
-          ingestStatusEl.textContent = `Error ${res.status}`;
+        if (res.status === 401) {
+          ingestStatusEl.textContent = "Not logged in. Please log in first.";
+          ingestStatusEl.className = "status error";
+        } else if (!res.ok) {
+          ingestStatusEl.textContent = data.detail || `Error ${res.status}`;
           ingestStatusEl.className = "status error";
         } else {
           ingestStatusEl.textContent = `Ingested (document_id: ${data.document_id})`;
@@ -127,8 +429,30 @@
 
     const form = document.getElementById("case-form");
     const statusEl = document.getElementById("status");
-    const responseBox = document.getElementById("response-box");
     const submitBtn = document.getElementById("submit-btn");
+
+    const appendMessage = (role, text) => {
+      const empty = chatWindow.querySelector(".chat-empty");
+      if (empty) {
+        empty.remove();
+      }
+      const wrapper = document.createElement("div");
+      wrapper.className = `msg ${role === "user" ? "msg-user" : "msg-assistant"}`;
+
+      const roleEl = document.createElement("div");
+      roleEl.className = "msg-role";
+      roleEl.textContent = role === "user" ? "You" : "Assistant";
+
+      const textEl = document.createElement("div");
+      textEl.textContent = text;
+
+      wrapper.appendChild(roleEl);
+      wrapper.appendChild(textEl);
+      chatWindow.appendChild(wrapper);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      chatHistory.push({ role, content: text });
+    };
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -174,29 +498,88 @@
       };
 
       try {
+        const headers = { "Content-Type": "application/json" };
+        if (accessToken) {
+          headers["Authorization"] = `Bearer ${accessToken}`;
+        }
         const res = await fetch("/api/v1/cases/analyze", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(payload),
         });
-
         const data = await res.json();
-        if (!res.ok) {
-          statusEl.textContent = `Error ${res.status}`;
+        if (res.status === 401) {
+          statusEl.textContent = "Not logged in. Please log in first.";
           statusEl.className = "status error";
+          appendMessage("assistant", "You need to log in before analyzing a case.");
+        } else if (!res.ok) {
+          statusEl.textContent = data.detail || `Error ${res.status}`;
+          statusEl.className = "status error";
+          appendMessage("assistant", data.detail || `Error ${res.status}`);
         } else {
           statusEl.textContent = "OK";
           statusEl.className = "status ok";
+
+          const userSummary = `Analyze case: ${age}y ${sex}, symptoms: ${symptoms.join(", ")}`;
+          appendMessage("user", userSummary);
+
+          const assistantText = data.summary || "No summary returned.";
+          appendMessage("assistant", assistantText);
         }
-        responseBox.textContent = JSON.stringify(data, null, 2);
       } catch (err) {
         statusEl.textContent = "Network error";
         statusEl.className = "status error";
-        responseBox.textContent = String(err);
+        appendMessage("assistant", String(err));
       } finally {
         submitBtn.disabled = false;
       }
     });
+
+    chatSend.addEventListener("click", async () => {
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      appendMessage("user", text);
+      chatInput.value = "";
+
+      const headers = { "Content-Type": "application/json" };
+      if (accessToken) {
+        headers["Authorization"] = `Bearer ${accessToken}`;
+      }
+
+      const messages = chatHistory.map(m => ({ role: m.role, content: m.content }));
+
+      try {
+        const res = await fetch("/api/v1/chat", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ messages }),
+        });
+        const data = await res.json();
+        if (res.status === 401) {
+          appendMessage("assistant", "You need to log in before chatting with the assistant.");
+        } else if (!res.ok) {
+          appendMessage("assistant", data.detail || `Error ${res.status}`);
+        } else {
+          appendMessage("assistant", data.message.content || "");
+        }
+      } catch (err) {
+        appendMessage("assistant", String(err));
+      }
+    });
+
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        chatSend.click();
+      }
+    });
+
+    rightPanelToggle.addEventListener("click", () => {
+      rightPanel.classList.toggle("collapsed");
+    });
   </script>
+
 </body>
+
 </html>

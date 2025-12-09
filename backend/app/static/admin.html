@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - Medical Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 1.5rem; background: #0f172a; color: #e5e7eb; }
+    h1, h2, h3 { margin-top: 0; }
+    a { color: #93c5fd; }
+    .shell { max-width: 1200px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .tag { font-size: 0.8rem; padding: 0.15rem 0.45rem; border-radius: 999px; background: #1d4ed8; color: #e5e7eb; }
+
+    .grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr); gap: 1.5rem; }
+    @media (max-width: 1000px) { .grid { display: block; } }
+
+    .card { background: #020617; border-radius: 10px; padding: 1.25rem 1.5rem; box-shadow: 0 1px 3px rgba(15,23,42,0.7); border: 1px solid #1f2937; }
+    .card-light { background: #020617; }
+
+    label { display: block; font-size: 0.85rem; font-weight: 600; margin-top: 0.75rem; color: #9ca3af; }
+    input, textarea { width: 100%; padding: 0.5rem 0.6rem; margin-top: 0.25rem; border-radius: 6px; border: 1px solid #334155; background: #020617; color: #e5e7eb; font-size: 0.9rem; }
+    textarea { min-height: 120px; resize: vertical; }
+    button { margin-top: 1rem; padding: 0.55rem 1.1rem; border-radius: 999px; border: none; background: #2563eb; color: #f9fafb; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: wait; }
+
+    .status { margin-top: 0.5rem; font-size: 0.8rem; color: #9ca3af; }
+    .status.ok { color: #4ade80; }
+    .status.error { color: #f87171; }
+
+    .pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; background: #111827; color: #e5e7eb; }
+    .pill span.key { color: #9ca3af; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
+    th, td { padding: 0.35rem 0.4rem; border-bottom: 1px solid #111827; text-align: left; }
+    th { font-weight: 600; color: #9ca3af; }
+    tr:nth-child(odd) td { background: #020617; }
+
+    .scroll { max-height: 260px; overflow: auto; margin-top: 0.5rem; border-radius: 6px; border: 1px solid #111827; }
+    pre { margin: 0; padding: 0.6rem 0.75rem; font-size: 0.75rem; background: #020617; color: #e5e7eb; overflow: auto; }
+
+    .kpi-row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem; }
+    .kpi { flex: 1; min-width: 120px; padding: 0.5rem 0.75rem; border-radius: 8px; background: #020617; border: 1px solid #1e293b; font-size: 0.8rem; }
+    .kpi-label { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.06em; }
+    .kpi-value { font-size: 1.1rem; margin-top: 0.1rem; }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="header">
+      <div>
+        <h1>Admin dashboard</h1>
+        <p style="font-size:0.9rem;color:#9ca3af">Inspect tenants, users, cases, and interactions, and tune the system prompt.</p>
+      </div>
+      <div style="text-align:right;font-size:0.8rem;">
+        <div class="tag">internal</div>
+        <div style="margin-top:0.4rem;">Back to demo: <a href="/demo">/demo</a></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2 style="margin-bottom:0.3rem;">Auth</h2>
+        <p style="font-size:0.8rem;color:#9ca3af;">Log in as an admin user to access protected admin APIs.</p>
+        <form id="login-form">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="admin@example.com" required />
+
+          <label for="password">Password</label>
+          <input id="password" type="password" placeholder="••••••••" required />
+
+          <button type="submit" id="login-btn">Log in</button>
+          <div id="login-status" class="status"></div>
+        </form>
+
+        <div style="margin-top:1rem;font-size:0.8rem;color:#9ca3af;">
+          <div>Token: <span id="token-pill" class="pill"><span class="key">none</span></span></div>
+        </div>
+
+        <hr style="margin:1.2rem 0;border:none;border-top:1px solid #111827;" />
+
+        <h3 style="margin-bottom:0.3rem;">System prompt</h3>
+        <p style="font-size:0.8rem;color:#9ca3af;">This prompt is used for both case analysis and chat. Update and save to experiment.</p>
+        <textarea id="system-prompt"></textarea>
+        <button type="button" id="prompt-save-btn">Save prompt</button>
+        <div id="prompt-status" class="status"></div>
+      </div>
+
+      <div class="card card-light">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <h2 style="margin-bottom:0.4rem;">Database overview</h2>
+          <button type="button" id="refresh-btn" style="margin-top:0;">Refresh</button>
+        </div>
+        <div id="summary-status" class="status">Waiting for refresh…</div>
+
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-label">Tenants</div><div id="kpi-tenants" class="kpi-value">0</div></div>
+          <div class="kpi"><div class="kpi-label">Users</div><div id="kpi-users" class="kpi-value">0</div></div>
+          <div class="kpi"><div class="kpi-label">Cases</div><div id="kpi-cases" class="kpi-value">0</div></div>
+          <div class="kpi"><div class="kpi-label">Interactions (recent)</div><div id="kpi-interactions" class="kpi-value">0</div></div>
+        </div>
+
+        <h3 style="margin-top:1rem;">Tenants</h3>
+        <div class="scroll" id="tenants-box"><pre>–</pre></div>
+
+        <h3 style="margin-top:1rem;">Users</h3>
+        <div class="scroll" id="users-box"><pre>–</pre></div>
+
+        <h3 style="margin-top:1rem;">Cases</h3>
+        <div class="scroll" id="cases-box"><pre>–</pre></div>
+
+        <h3 style="margin-top:1rem;">Recent interactions</h3>
+        <div class="scroll" id="interactions-box"><pre>–</pre></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let accessToken = null;
+
+    const loginForm = document.getElementById("login-form");
+    const loginStatusEl = document.getElementById("login-status");
+    const loginBtn = document.getElementById("login-btn");
+    const tokenPill = document.getElementById("token-pill");
+
+    const systemPromptEl = document.getElementById("system-prompt");
+    const promptSaveBtn = document.getElementById("prompt-save-btn");
+    const promptStatusEl = document.getElementById("prompt-status");
+
+    const refreshBtn = document.getElementById("refresh-btn");
+    const summaryStatusEl = document.getElementById("summary-status");
+
+    const kpiTenants = document.getElementById("kpi-tenants");
+    const kpiUsers = document.getElementById("kpi-users");
+    const kpiCases = document.getElementById("kpi-cases");
+    const kpiInteractions = document.getElementById("kpi-interactions");
+
+    const tenantsBox = document.getElementById("tenants-box");
+    const usersBox = document.getElementById("users-box");
+    const casesBox = document.getElementById("cases-box");
+    const interactionsBox = document.getElementById("interactions-box");
+
+    const updateTokenPill = () => {
+      if (!accessToken) {
+        tokenPill.innerHTML = '<span class="key">none</span>';
+      } else {
+        const short = accessToken.slice(0, 8) + '…';
+        tokenPill.innerHTML = `<span class="key">bearer</span><span>${short}</span>`;
+      }
+    };
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      loginStatusEl.textContent = "Logging in…";
+      loginStatusEl.className = "status";
+      loginBtn.disabled = true;
+
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          loginStatusEl.textContent = data.detail || `Error ${res.status}`;
+          loginStatusEl.className = "status error";
+          accessToken = null;
+        } else {
+          accessToken = data.access_token;
+          loginStatusEl.textContent = "Logged in";
+          loginStatusEl.className = "status ok";
+          loadSettings();
+          loadSummary();
+        }
+      } catch (err) {
+        loginStatusEl.textContent = "Network error";
+        loginStatusEl.className = "status error";
+        accessToken = null;
+      } finally {
+        loginBtn.disabled = false;
+        updateTokenPill();
+      }
+    });
+
+    async function loadSettings() {
+      if (!accessToken) {
+        promptStatusEl.textContent = "Log in as admin to load settings.";
+        promptStatusEl.className = "status";
+        return;
+      }
+      promptStatusEl.textContent = "Loading prompt…";
+      promptStatusEl.className = "status";
+      try {
+        const res = await fetch("/admin/settings", {
+          headers: { "Authorization": `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          promptStatusEl.textContent = data.detail || `Error ${res.status}`;
+          promptStatusEl.className = "status error";
+          return;
+        }
+        systemPromptEl.value = data.system_prompt || "";
+        promptStatusEl.textContent = "Loaded";
+        promptStatusEl.className = "status ok";
+      } catch (err) {
+        promptStatusEl.textContent = "Network error";
+        promptStatusEl.className = "status error";
+      }
+    }
+
+    promptSaveBtn.addEventListener("click", async () => {
+      if (!accessToken) {
+        promptStatusEl.textContent = "Log in as admin first.";
+        promptStatusEl.className = "status error";
+        return;
+      }
+      promptStatusEl.textContent = "Saving…";
+      promptStatusEl.className = "status";
+      try {
+        const res = await fetch("/admin/settings", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ system_prompt: systemPromptEl.value }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          promptStatusEl.textContent = data.detail || `Error ${res.status}`;
+          promptStatusEl.className = "status error";
+        } else {
+          systemPromptEl.value = data.system_prompt || "";
+          promptStatusEl.textContent = "Saved";
+          promptStatusEl.className = "status ok";
+        }
+      } catch (err) {
+        promptStatusEl.textContent = "Network error";
+        promptStatusEl.className = "status error";
+      }
+    });
+
+    async function loadSummary() {
+      if (!accessToken) {
+        summaryStatusEl.textContent = "Log in as admin to load data.";
+        summaryStatusEl.className = "status";
+        return;
+      }
+      summaryStatusEl.textContent = "Loading…";
+      summaryStatusEl.className = "status";
+      try {
+        const res = await fetch("/admin/summary", {
+          headers: { "Authorization": `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          summaryStatusEl.textContent = data.detail || `Error ${res.status}`;
+          summaryStatusEl.className = "status error";
+          return;
+        }
+
+        const tenants = data.tenants || [];
+        const users = data.users || [];
+        const cases = data.cases || [];
+        const interactions = data.interactions || [];
+
+        kpiTenants.textContent = tenants.length;
+        kpiUsers.textContent = users.length;
+        kpiCases.textContent = cases.length;
+        kpiInteractions.textContent = interactions.length;
+
+        const renderRows = (items, columns) => {
+          if (!items.length) return '<pre style="padding:0.5rem 0.75rem;">No rows</pre>';
+          const header = '<tr>' + columns.map(c => `<th>${c.label}</th>`).join('') + '</tr>';
+          const body = items.map(it => {
+            return '<tr>' + columns.map(c => `<td>${(it[c.key] ?? '')}</td>`).join('') + '</tr>';
+          }).join('');
+          return `<table>${header}${body}</table>`;
+        };
+
+        tenantsBox.innerHTML = renderRows(tenants, [
+          { key: 'id', label: 'ID' },
+          { key: 'slug', label: 'Slug' },
+          { key: 'name', label: 'Name' },
+          { key: 'plan', label: 'Plan' },
+        ]);
+
+        usersBox.innerHTML = renderRows(users, [
+          { key: 'id', label: 'ID' },
+          { key: 'email', label: 'Email' },
+          { key: 'tenant_id', label: 'Tenant' },
+          { key: 'role', label: 'Role' },
+          { key: 'is_active', label: 'Active' },
+        ]);
+
+        casesBox.innerHTML = renderRows(cases, [
+          { key: 'id', label: 'ID' },
+          { key: 'tenant_id', label: 'Tenant' },
+          { key: 'created_by_user_id', label: 'User' },
+          { key: 'patient_age', label: 'Age' },
+          { key: 'sex', label: 'Sex' },
+          { key: 'status', label: 'Status' },
+        ]);
+
+        interactionsBox.innerHTML = renderRows(interactions, [
+          { key: 'id', label: 'ID' },
+          { key: 'case_id', label: 'Case' },
+          { key: 'tenant_id', label: 'Tenant' },
+          { key: 'user_id', label: 'User' },
+          { key: 'llm_model', label: 'Model' },
+          { key: 'created_at', label: 'Created at' },
+        ]);
+
+        summaryStatusEl.textContent = "Loaded";
+        summaryStatusEl.className = "status ok";
+      } catch (err) {
+        summaryStatusEl.textContent = "Network error";
+        summaryStatusEl.className = "status error";
+      }
+    }
+
+    refreshBtn.addEventListener("click", loadSummary);
+    updateTokenPill();
+  </script>
+</body>
+</html>
